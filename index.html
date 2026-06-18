@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0C0F0B">
 <title>Haftalık program</title>
 <meta name="apple-mobile-web-app-title" content="Program">
@@ -36,7 +37,7 @@
     }
   }
   *{box-sizing:border-box}
-  html{-webkit-text-size-adjust:100%}
+  html{-webkit-text-size-adjust:100%;background:var(--bg)}
   body{
     margin:0; color:var(--ink);
     font-family:'Barlow Semi Condensed',-apple-system,system-ui,sans-serif;
@@ -299,6 +300,13 @@
   .q-item p{font-size:15px;line-height:1.45}
   .cal-cell .snip{font-size:10px;line-height:1.12}
   .sess-note{font-size:14px;line-height:1.55}
+
+  .idea-list{display:flex;flex-direction:column;gap:8px;margin:4px 0 0}
+  .idea-item{display:flex;align-items:flex-start;gap:10px;background:rgba(217,211,194,.03);border:.5px solid var(--hair);border-radius:10px;padding:10px 12px}
+  .idea-item p{flex:1;margin:0;font-size:14px;line-height:1.4;outline:none;min-width:0;word-break:break-word}
+  .idea-item .rm{flex:none;border:none;background:transparent;color:var(--muted);font-size:13px;cursor:pointer;padding:2px 4px}
+  .idea-add{margin-top:12px}
+  .idea-add input{margin-bottom:8px}
 </style>
 </head>
 <body>
@@ -479,6 +487,16 @@
     <section class="card">
       <div class="head"><span class="dot" style="background:var(--green)"></span><p class="title">Ses efektleri</p></div>
       <button class="rest-btn" id="soundToggle">Ses efektleri açık</button>
+    </section>
+
+    <section class="card">
+      <div class="head"><span class="dot" style="background:var(--amber)"></span><p class="title">Eklenebilecek özellikler</p></div>
+      <p class="note">Aklına gelen özellik fikirlerini buraya yaz; sonra birlikte ekleriz. Dokunup düzenleyebilir, ✕ ile silebilirsin.</p>
+      <div class="idea-list" id="ideaList"></div>
+      <div class="idea-add">
+        <input type="text" id="ideaInput" placeholder="Yeni fikir…">
+        <button class="q-add-btn" id="ideaAddBtn">Ekle</button>
+      </div>
     </section>
   </div>
 
@@ -930,7 +948,166 @@
   setFilterUI();
   window.__tabHooks=window.__tabHooks||{};
   window.__tabHooks.arsiv=function(){if(detail.hidden)renderList();};
-  openDB(function(){renderList();});
+  var GAMES=[
+    ["The Last of Us Part 1",96,""],
+    ["The Last of Us Part 2",99,""],
+    ["Red Dead Redemption 2",98,""],
+    ["God of War 2018",98,""],
+    ["God of War: Ragnarök",98,""],
+    ["Clair Obscur Expedition: 33",97,""],
+    ["Elden Ring",98,""],
+    ["Baldur’s Gate 3",98,""],
+    ["Uncharted 1",80,""],
+    ["Uncharted 2",95,""],
+    ["Uncharted 3",94,""],
+    ["Uncharted 4",94,""],
+    ["Uncharted The Lost Legacy",87,""],
+    ["Astro Bot",90,""],
+    ["Death Stranding 2",92,""],
+    ["Death Stranding 1",89,""],
+    ["Marvels Spider Man 2018",88,""],
+    ["Spiderman Miles Morales",85,""],
+    ["Blue Prince",82,""],
+    ["The Witcher 3: Wild Hunt",85,""],
+    ["Sekiro",90,""],
+    ["Doom Eternal",75,""],
+    ["Detroit Become Human",93,""],
+    ["Rachet & Clank",70,""],
+    ["F.I.S.T.",65,""],
+    ["Monster Hunter",40,"Sevene biraz saygı duymaya çalışıyorum."],
+    ["Outer Wilds",88,""],
+    ["COD MW 2",85,""],
+    ["COD WW 2",87,""],
+    ["Battlefield V",89,""],
+    ["COD MW 3",70,""],
+    ["Far Cry 3",89,""],
+    ["Far Cry 4",88,""],
+    ["Far Cry: New Dawn",77,""],
+    ["Far Cry 6",70,""],
+    ["Ghost Runner",83,""],
+    ["GTA 4",85,""],
+    ["GTA 5",84,""],
+    ["GTA 3",84,"Büyük bir GTA hayranı değilim…"],
+    ["Marvels Guardian of the Galaxy",87,"Atmosferi ve hikayesi ile eğlendirdi"],
+    ["Hades",85,""],
+    ["Dead Cells",77,""],
+    ["Celeste",79,""],
+    ["Souls of Midnight",62,""],
+    ["Inside",81,""],
+    ["A Way Out",86,""],
+    ["Mafia 1 Remake",85,""],
+    ["Tomb Raider",72,""],
+    ["Mount and Blade Bannerlord",87,""],
+    ["Starfield",81,""],
+    ["Subnautica",79,""],
+    ["Dead Island 2",75,""],
+    ["Crusader Kings 3",90,""],
+    ["Europa Universalis 4",88,""],
+    ["Frostpunk",87,""],
+    ["This War of Mine",85,""],
+    ["Ori",86,"Seri olarak"],
+    ["Hollow Knight",83,"Çok az oynadım"],
+    ["Telltale’s The Walking Dead season 1",87,""],
+    ["Telltale’s The Walking Dead season 2",80,""],
+    ["Wasteland 2",78,""],
+    ["A Plague Tale 1",76,""],
+    ["Hellblade 1",70,""],
+    ["Metro 2033",80,""],
+    ["Cyberpunk 2077",88,""],
+    ["COD: Advanced Warfare",75,""],
+    ["Dishonored",82,""],
+    ["Far Cry Primal",71,""],
+    ["Returnal",86,""],
+    ["Need for Speed Payback",75,""],
+    ["Need for Speed Underground 2",83,""],
+    ["The Long Dark",80,""],
+    ["Kingdom Come: Deliverance",78,""],
+    ["Days Gone",85,""],
+    ["Ghost Recon Breakpoint",69,""],
+    ["Assasin’s Creed Valhalla",84,""],
+    ["Assassin’s Creed Mirage",71,""],
+    ["Ghost of Tsushima",90,""],
+    ["High on Life",75,""],
+    ["Stray",59,""],
+    ["Lies of P",87,""],
+    ["Balatro",91,""],
+    ["Final Fantasy 7 Remake",88,""],
+    ["Dispatch",93,""],
+    ["Alan Wake II",86,""],
+    ["Marvel’s Spiderman 2",92,""],
+    ["Pragmata",94,""],
+  ];
+  function escG(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+  function seedGames(){
+    try{
+      if(localStorage.getItem('powerup_games_seed_v1')) return;
+      var have={}; items.forEach(function(it){ if(it.type==='oyun'&&it.name) have[it.name.toLowerCase()]=1; });
+      var base=Date.now();
+      GAMES.forEach(function(g,i){
+        if(have[g[0].toLowerCase()]) return;
+        var it={id:'seedg-'+i+'-'+base,type:'oyun',name:g[0],score:g[1],html:g[2]?escG(g[2]):'',color:PAL[0],photo:null,created:base+i};
+        items.push(it); putItem(it);
+      });
+      localStorage.setItem('powerup_games_seed_v1','1');
+    }catch(e){}
+  }
+  var FILMS=[
+    ["8 Mile",70,""],
+    ["Forrest Gump",85,""],
+    ["The Irishman",86,""],
+    ["Esaretin Bedeli",90,""],
+    ["The Godfather",95,""],
+    ["12 Angry Man",98,""],
+    ["Shinder’s List",97,""],
+    ["The Good the bad the ugly",80,""],
+    ["Fight Club",86,""],
+    ["Inception",84,""],
+    ["Oppenheimer",92,""],
+    ["Interstellar",87,""],
+    ["Se7en",88,""],
+    ["The Pianist",90,""],
+    ["Cars",95,""],
+    ["Shrek",95,""],
+    ["Gladiator",65,""],
+    ["The wolf of the wall street",97,""],
+    ["Django: Unchained",80,""],
+    ["Joker",89,""],
+    ["Scarface",90,""],
+    ["Scent of a woman",95,""],
+    ["Up",90,""],
+    ["1917",85,"Tek kamera çekim zaafımdan dolayı"],
+    ["Casino",87,""],
+    ["Inside Out",60,""],
+    ["Monsters",70,""],
+    ["Ford V Ferrari",80,""],
+    ["F1 Movie",75,""],
+    ["Rocky",90,""],
+    ["Devils Advocate",96,""],
+    ["Fifth Element",90,""],
+    ["The Lawnmower Man",60,""],
+    ["Heat",92,""],
+    ["Soysuzlar Çetesi",80,"Cristopher WALTZ 10/10 💫"],
+    ["Man on Fire",70,""],
+    ["Scott Pilgrim vs. The world",85,""],
+    ["Steve",73,""],
+    ["King’s Speech",84,""],
+    ["I Swear",85,""],
+    ["Goodfellas",90,""],
+  ];
+  function seedFilms(){
+    try{
+      if(localStorage.getItem('powerup_films_seed_v1')) return;
+      var have={}; items.forEach(function(it){ if(it.type==='film'&&it.name) have[it.name.toLowerCase()]=1; });
+      var base=Date.now();
+      FILMS.forEach(function(g,i){
+        if(have[g[0].toLowerCase()]) return;
+        var it={id:'seedf-'+i+'-'+base,type:'film',name:g[0],score:g[1],html:g[2]?escG(g[2]):'',color:PAL[0],photo:null,created:base+i};
+        items.push(it); putItem(it);
+      });
+      localStorage.setItem('powerup_films_seed_v1','1');
+    }catch(e){}
+  }
+  openDB(function(){ seedGames(); seedFilms(); renderList(); });
 })();
 </script>
 
@@ -1213,6 +1390,32 @@
     s.style.animationDelay=(-Math.random()*dur)+'s';
     box.appendChild(s);
   }
+})();
+</script>
+<script>
+(function(){
+  var KEY='powerup_ideas_v1';
+  function load(){try{var r=localStorage.getItem(KEY);if(r)return JSON.parse(r);}catch(e){}return [];}
+  function save(a){try{localStorage.setItem(KEY,JSON.stringify(a));}catch(e){}}
+  var ideas=load();
+  var list=document.getElementById('ideaList'), inp=document.getElementById('ideaInput'), addb=document.getElementById('ideaAddBtn');
+  if(!list||!inp||!addb) return;
+  function render(){
+    list.innerHTML='';
+    if(!ideas.length){var e=document.createElement('p');e.style.cssText='color:var(--muted);font-size:13px;margin:0';e.textContent='Henüz fikir yok. Aşağıya yaz.';list.appendChild(e);return;}
+    ideas.forEach(function(t,idx){
+      var it=document.createElement('div');it.className='idea-item';
+      var pp=document.createElement('p');pp.contentEditable=true;pp.textContent=t;
+      pp.addEventListener('blur',function(){var v=(pp.textContent||'').trim();if(v){ideas[idx]=v;save(ideas);}else{ideas.splice(idx,1);save(ideas);render();}});
+      var rm=document.createElement('button');rm.className='rm';rm.textContent='\u2715';
+      rm.addEventListener('click',function(){ideas.splice(idx,1);save(ideas);render();});
+      it.appendChild(pp);it.appendChild(rm);list.appendChild(it);
+    });
+  }
+  function add(){var v=(inp.value||'').trim();if(!v)return;ideas.push(v);save(ideas);inp.value='';render();}
+  addb.addEventListener('click',add);
+  inp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();add();}});
+  render();
 })();
 </script>
 </body>
