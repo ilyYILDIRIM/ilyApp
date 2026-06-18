@@ -109,8 +109,9 @@
   .task.done .name{text-decoration:line-through;text-decoration-color:var(--rail);color:var(--muted)}
   .task.rested{opacity:.45}
 
-  .tabs{display:flex;gap:5px;background:var(--hair);padding:4px;border-radius:12px;margin:0 0 16px}
-  .tab-btn{flex:1;padding:9px 4px;border:none;background:transparent;color:var(--muted);font-family:inherit;font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent}
+  .tabs{display:flex;gap:5px;background:var(--hair);padding:4px;border-radius:12px;margin:0 0 16px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab-btn{flex:0 0 auto;padding:9px 12px;border:none;background:transparent;color:var(--muted);font-family:inherit;font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent}
   .tab-btn.on{background:var(--surface);color:var(--ink)}
   .tab-panel[hidden]{display:none}
 
@@ -219,6 +220,34 @@
   .qb-text{font-size:23px;line-height:1.2}
   .q-item p{font-size:20px}
   .cal-cell .snip{font-size:14px;line-height:1.08}
+
+  .study-list{display:flex;flex-direction:column;gap:10px}
+  .study-card{background:var(--surface);border:.5px solid var(--hair);border-radius:14px;padding:14px 16px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .sc-top{display:flex;align-items:center;justify-content:space-between}
+  .sc-title{font-size:16px;font-weight:600}
+  .sc-pct{font-size:14px;font-weight:600;color:var(--indigo)}
+  .sc-sub{font-size:12px;color:var(--muted);margin-top:6px}
+  .study-card .prog,.sd-overall .prog,.phase .prog{margin:8px 0 0}
+  .add-area-btn{display:block;width:100%;margin-top:12px;padding:11px;border:.5px dashed var(--hair);background:transparent;color:var(--muted);border-radius:10px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .sd-title{font-size:21px;font-weight:600;outline:none;margin:8px 0}
+  .sd-overall{margin:0 0 18px}
+  .sd-overall .sc-sub{margin-top:6px}
+  .phase{background:var(--surface);border:.5px solid var(--hair);border-radius:14px;padding:14px;margin:0 0 12px}
+  .phase-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+  .phase-title{font-size:15px;font-weight:600;outline:none;flex:1;line-height:1.3}
+  .phase-badge{flex:none;font-size:12px;font-weight:600;color:var(--muted);background:var(--hair);border-radius:20px;padding:3px 9px}
+  .sess{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:.5px solid var(--hair)}
+  .sess:last-of-type{border-bottom:none}
+  .sess .chk{width:24px;height:24px;flex:none;margin-top:1px;border-radius:50%;border:2px solid var(--rail);display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .sess .chk svg{width:13px;height:13px;opacity:0}
+  .sess .chk.on{background:var(--indigo);border-color:var(--indigo)}
+  .sess .chk.on svg{opacity:1}
+  .sess-txt{flex:1;font-size:14px;line-height:1.45;outline:none;min-width:0}
+  .sess.done .sess-txt{text-decoration:line-through;color:var(--muted)}
+  .sess-del{flex:none;border:none;background:transparent;color:var(--muted);font-size:13px;cursor:pointer;padding:2px 4px}
+  .add-sess-btn{margin-top:10px;padding:8px 12px;border:.5px dashed var(--hair);background:transparent;color:var(--muted);border-radius:9px;font-family:inherit;font-size:13px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .sess-del-phase{margin:6px 0 0 8px;border:none;background:transparent;color:var(--red);font-size:12px;font-family:inherit;cursor:pointer}
+  .sd-del{display:block;margin:18px auto 0;border:none;background:transparent;color:var(--red);font-size:13px;font-family:inherit;cursor:pointer}
 </style>
 </head>
 <body>
@@ -234,6 +263,7 @@
     <button class="tab-btn on" data-tab="program">Program</button>
     <button class="tab-btn" data-tab="takvim">Takvim</button>
     <button class="tab-btn" data-tab="arsiv">Arşiv</button>
+    <button class="tab-btn" data-tab="calismalarim">Çalışmalarım</button>
     <button class="tab-btn" data-tab="ayarlar">Ayarlar</button>
   </div>
 
@@ -372,6 +402,11 @@
       <div class="ed-photos" id="aPhotos"></div>
       <div class="ed-area" id="aEdArea" contenteditable="true" data-ph="Bu yapım hakkında ne düşünüyorsun?"></div>
     </div>
+  </div>
+
+  <div id="tab-calismalarim" class="tab-panel" hidden>
+    <div class="study-list" id="studyList"></div>
+    <div class="study-detail" id="studyDetail" hidden></div>
   </div>
 
   <div id="tab-ayarlar" class="tab-panel" hidden>
@@ -875,6 +910,162 @@
     if(/done-toggle|arc-add-btn|q-add-btn|cal-today-btn|qb-shuffle/.test(cl))window.puSound('success');
     else window.puSound('tick');
   },true);
+})();
+</script>
+
+<script>
+(function(){
+  var KEY='powerup_studies_v1';
+  function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+  function S(t){return {id:uid(),text:t,done:false};}
+  function P(t,arr){return {id:uid(),title:t,sessions:arr.map(S)};}
+  function seed(){
+    return [{ id:'scriptwriting', title:'Scriptwriting Çalışmaları', phases:[
+      P('Faz 1 — Büyük resim yapıları (10-12 oturum)',[
+        'Üç perde yapısı — teori (Syd Field, Screenplay)',
+        'Üç perde — bir filmi tersten çıkar (deconstruction)',
+        'Üç perde — notları kendi yapı şablonuna dök',
+        'Save the Cat beat sheet — teori (Blake Snyder)',
+        'Save the Cat — bir film/oyunu beat\u2019lere böl',
+        'Save the Cat — şablon haline getir',
+        'Story Circle — teori (Harmon / Vogler, The Writer\u2019s Journey)',
+        'Story Circle — bir hikâyeyi 8 adıma oturt',
+        'Story Circle — şablon',
+        'Bitirdiğin bir kitabı üç şablona göre geriye dönük analiz et',
+        'Eksik/fazla beat\u2019leri raporla, yapı şablonunu birleştir'
+      ]),
+      P('Faz 2 — Karakter matematiği (8-10 oturum)',[
+        'Want vs need ayrımı — teori',
+        'Karakter yayı (arc) türleri — teori',
+        'Truby \u201cahlaki argüman\u201d — teori (The Anatomy of Story)',
+        'Bir filmin ana karakterinin want/need\u2019ini çıkar',
+        'Aynı karakterin arc\u2019ını haritalandır',
+        'Üçüncü kitabının ana karakteri: want\u2019ı yaz',
+        'Aynı karakter: need\u2019i yaz',
+        'Want–need çatışmasını tek cümleye indir',
+        'Yan karakterlerin ahlaki argümana katkısını çıkar'
+      ]),
+      P('Faz 3 — Sahne matematiği (8-10 oturum)',[
+        'Scene yapısı: Goal-Conflict-Disaster — teori (Swain)',
+        'Sequel yapısı: Reaction-Dilemma-Decision — teori',
+        'Bir film sahnesinde Scene/Sequel ayrımı pratiği',
+        'Üçüncü kitabından Sahne 1 — 6 bileşene göre etiketle',
+        'Sahne 2 — 6 bileşen etiketi',
+        'Sahne 3 — 6 bileşen etiketi',
+        'Sahne 4 — 6 bileşen etiketi',
+        'Sahne 5 — 6 bileşen etiketi',
+        'Eksik bileşenli (zayıf) sahneleri işaretle + revize planı'
+      ]),
+      P('Faz 4 — Oyun senaryosuna özel yapı (10-12 oturum)',[
+        'Lineer → interaktif geçiş — teori (Game Narrative Toolbox)',
+        'Dallanan anlatı yapıları — teori',
+        'Quest yapıları — teori (Despain, Writing for Video Game Genres)',
+        'Player agency — teori',
+        'Çevresel hikâye anlatımı — teori',
+        'Bir oyunun anlatı yapısını deconstruct et',
+        'Power-up hikâyesi: beat haritası çıkar',
+        'Dallanma noktalarını işaretle',
+        'Bir quest\u2019i tam tasarla (giriş-çatışma-sonuç + seçenekler)',
+        'Çevresel anlatım öğelerini listele',
+        'Beat haritası + dallanma diyagramını birleştir'
+      ]),
+      P('Faz 5 — Sürekli deconstruction rutini',[
+        'Haftalık deconstruction #1 — dört katmanı uygula',
+        'Haftalık deconstruction #2',
+        'Haftalık deconstruction #3',
+        'Haftalık deconstruction #4'
+      ]),
+      P('Faz 6 — Kendi işine uygulama',[
+        'Üçüncü kitabını/oyun senaryonu büyük resim yapısıyla yeniden taslakla',
+        'Karakter matematiğini uygula (want/need, arc)',
+        'Sahne matematiğini uygula (Scene/Sequel)',
+        'Oyun yapısını uygula (dallanma + quest)'
+      ]),
+      P('Faz 7 — Geri bildirim döngüsü',[
+        'Yazma grubu / beta okuyucu bul',
+        'r/screenwriting veya r/gamedesign\u2019da paylaş',
+        'Geri bildirimi yapısal nota dök',
+        'Bir revizyon turu yap'
+      ])
+    ]}];
+  }
+  function load(){try{var r=localStorage.getItem(KEY);if(r)return JSON.parse(r);}catch(e){}var s=seed();save(s);return s;}
+  function save(a){try{localStorage.setItem(KEY,JSON.stringify(a));}catch(e){}}
+  var areas=load(), curArea=null;
+
+  var listView=document.getElementById('studyList'), detailView=document.getElementById('studyDetail');
+
+  function areaStats(a){var t=0,d=0;a.phases.forEach(function(p){p.sessions.forEach(function(s){t++;if(s.done)d++;});});return{t:t,d:d};}
+  function phaseStats(p){var d=0;p.sessions.forEach(function(s){if(s.done)d++;});return{t:p.sessions.length,d:d};}
+  function findArea(){for(var i=0;i<areas.length;i++)if(areas[i].id===curArea)return areas[i];return null;}
+
+  function renderList(){
+    detailView.hidden=true;listView.hidden=false;listView.innerHTML='';
+    areas.forEach(function(a){
+      var st=areaStats(a),pct=st.t?Math.round(st.d/st.t*100):0;
+      var card=document.createElement('div');card.className='study-card';
+      card.innerHTML='<div class="sc-top"><span class="sc-title"></span><span class="sc-pct">%'+pct+'</span></div><div class="prog"><i style="width:'+pct+'%"></i></div><div class="sc-sub">'+st.d+' / '+st.t+' oturum tamam</div>';
+      card.querySelector('.sc-title').textContent=a.title;
+      card.addEventListener('click',function(){curArea=a.id;renderDetail();});
+      listView.appendChild(card);
+    });
+    var add=document.createElement('button');add.className='add-area-btn';add.textContent='+ Yeni çalışma alanı';
+    add.addEventListener('click',function(){var n=prompt('Çalışma alanı adı:');if(n&&n.trim()){areas.push({id:uid(),title:n.trim(),phases:[]});save(areas);renderList();}});
+    listView.appendChild(add);
+  }
+
+  function renderDetail(){
+    var a=findArea();if(!a){renderList();return;}
+    listView.hidden=true;detailView.hidden=false;detailView.innerHTML='';
+    var back=document.createElement('button');back.className='ad-back';back.textContent='‹ Çalışmalarım';
+    back.addEventListener('click',renderList);detailView.appendChild(back);
+    var title=document.createElement('div');title.className='sd-title';title.contentEditable=true;title.textContent=a.title;
+    title.addEventListener('blur',function(){a.title=(title.textContent||'').trim()||a.title;save(areas);});
+    detailView.appendChild(title);
+    var st=areaStats(a),pct=st.t?Math.round(st.d/st.t*100):0;
+    var ov=document.createElement('div');ov.className='sd-overall';
+    ov.innerHTML='<div class="prog"><i style="width:'+pct+'%"></i></div><div class="sc-sub">'+st.d+' / '+st.t+' oturum · %'+pct+'</div>';
+    detailView.appendChild(ov);
+    a.phases.forEach(function(p){detailView.appendChild(renderPhase(a,p));});
+    var addP=document.createElement('button');addP.className='add-area-btn';addP.textContent='+ Yeni faz';
+    addP.addEventListener('click',function(){var n=prompt('Faz adı:');if(n&&n.trim()){a.phases.push({id:uid(),title:n.trim(),sessions:[]});save(areas);renderDetail();}});
+    detailView.appendChild(addP);
+    var delA=document.createElement('button');delA.className='sd-del';delA.textContent='Bu çalışma alanını sil';
+    delA.addEventListener('click',function(){if(confirm('Çalışma alanı silinsin mi?')){areas=areas.filter(function(x){return x.id!==a.id;});save(areas);renderList();}});
+    detailView.appendChild(delA);
+  }
+
+  function renderPhase(a,p){
+    var wrap=document.createElement('div');wrap.className='phase';
+    var ps=phaseStats(p),ppct=ps.t?Math.round(ps.d/ps.t*100):0;
+    var head=document.createElement('div');head.className='phase-head';
+    var t=document.createElement('div');t.className='phase-title';t.contentEditable=true;t.textContent=p.title;
+    t.addEventListener('blur',function(){p.title=(t.textContent||'').trim()||p.title;save(areas);});
+    var badge=document.createElement('span');badge.className='phase-badge';badge.textContent=ps.d+'/'+ps.t;
+    head.appendChild(t);head.appendChild(badge);wrap.appendChild(head);
+    var bar=document.createElement('div');bar.className='prog';bar.innerHTML='<i style="width:'+ppct+'%"></i>';wrap.appendChild(bar);
+    p.sessions.forEach(function(s){
+      var row=document.createElement('div');row.className='sess'+(s.done?' done':'');
+      var chk=document.createElement('span');chk.className='chk'+(s.done?' on':'');chk.innerHTML='<svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      chk.addEventListener('click',function(){s.done=!s.done;save(areas);renderDetail();});
+      var txt=document.createElement('div');txt.className='sess-txt';txt.contentEditable=true;txt.textContent=s.text;
+      txt.addEventListener('blur',function(){s.text=(txt.textContent||'').trim()||s.text;save(areas);});
+      var del=document.createElement('button');del.className='sess-del';del.textContent='✕';
+      del.addEventListener('click',function(){p.sessions=p.sessions.filter(function(x){return x.id!==s.id;});save(areas);renderDetail();});
+      row.appendChild(chk);row.appendChild(txt);row.appendChild(del);wrap.appendChild(row);
+    });
+    var addS=document.createElement('button');addS.className='add-sess-btn';addS.textContent='+ Oturum ekle';
+    addS.addEventListener('click',function(){var n=prompt('Oturum açıklaması:');if(n&&n.trim()){p.sessions.push({id:uid(),text:n.trim(),done:false});save(areas);renderDetail();}});
+    wrap.appendChild(addS);
+    var delP=document.createElement('button');delP.className='sess-del-phase';delP.textContent='Fazı sil';
+    delP.addEventListener('click',function(){if(confirm('Faz silinsin mi?')){a.phases=a.phases.filter(function(x){return x.id!==p.id;});save(areas);renderDetail();}});
+    wrap.appendChild(delP);
+    return wrap;
+  }
+
+  window.__tabHooks=window.__tabHooks||{};
+  window.__tabHooks.calismalarim=function(){ if(detailView.hidden) renderList(); else renderDetail(); };
+  renderList();
 })();
 </script>
 </body>
